@@ -1,18 +1,16 @@
 import subprocess
 import pkg_resources
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 import cv2
 import imageio
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFilter
 import threading
 
 REQUIRED_PACKAGES = [
     'opencv-python',
     'imageio',
-    'Pillow',
-    'imageio[ffmpeg]',
-    'imageio[pyav]'
+    'Pillow'
 ]
 
 for package in REQUIRED_PACKAGES:
@@ -29,6 +27,7 @@ class Application(tk.Frame):
         self.master = master
         self.pack()
         self.create_widgets()
+        self.playing = False
 
     def create_widgets(self):
         self.menu = tk.Menu(self.master)
@@ -41,11 +40,23 @@ class Application(tk.Frame):
         self.canvas = tk.Canvas(self.master, width=720, height=480)
         self.canvas.pack()
 
+        self.play_button = tk.Button(self.master, text="Play", command=self.play_video)
+        self.play_button.pack(side=tk.LEFT)
+
+        self.pause_button = tk.Button(self.master, text="Pause", command=self.pause_video)
+        self.pause_button.pack(side=tk.LEFT)
+
+        self.stop_button = tk.Button(self.master, text="Stop", command=self.stop_video)
+        self.stop_button.pack(side=tk.LEFT)
+
+        self.progress = ttk.Scale(self.master, orient="horizontal", length=720)
+        self.progress.pack(side=tk.BOTTOM)
+
     def open_file(self):
         self.file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi"), ("Image files", "*.jpg *.png")])
         if self.file_path.endswith((".jpg", ".png")):
             self.image = Image.open(self.file_path)
-            self.image = self.image.resize((720, 480), Image.ANTIALIAS)
+            self.image = self.image.resize((720, 480), Image.LANCZOS)
             self.photo = ImageTk.PhotoImage(self.image)
             self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
         else:
@@ -54,17 +65,29 @@ class Application(tk.Frame):
             self.play_video()
 
     def play_video(self):
-        try:
-            frame = self.video.get_next_data()
-            frame_image = Image.fromarray(frame)
-            frame_image = frame_image.resize((720, 480), Image.ANTIALIAS)
-            self.photo = ImageTk.PhotoImage(frame_image)
-            self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
-            self.after(self.delay, self.play_video)
-        except:
-            pass
+        self.playing = True
+        self.update_frame()
+
+    def update_frame(self):
+        if self.playing:
+            try:
+                frame = self.video.get_next_data()
+                frame_image = Image.fromarray(frame)
+                frame_image = frame_image.resize((720, 480), Image.LANCZOS)
+                self.photo = ImageTk.PhotoImage(frame_image)
+                self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
+                self.after(self.delay, self.update_frame)
+            except:
+                pass
+
+    def pause_video(self):
+        self.playing = False
+
+    def stop_video(self):
+        self.playing = False
+        self.canvas.delete("all")
 
 root = tk.Tk()
 root.geometry("1280x720")
 app = Application(master=root)
-app.mainloop()
+app.mainloop
