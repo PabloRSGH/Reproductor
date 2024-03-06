@@ -1,7 +1,27 @@
+import subprocess
+import pkg_resources
 import tkinter as tk
 from tkinter import filedialog
 import cv2
+import imageio
 from PIL import Image, ImageTk
+import threading
+
+REQUIRED_PACKAGES = [
+    'opencv-python',
+    'imageio',
+    'Pillow',
+    'imageio[ffmpeg]',
+    'imageio[pyav]'
+]
+
+for package in REQUIRED_PACKAGES:
+    try:
+        dist = pkg_resources.get_distribution(package)
+        print('{} ({}) está instalado'.format(dist.key, dist.version))
+    except pkg_resources.DistributionNotFound:
+        print('{} NO está instalado'.format(package))
+        subprocess.call(['pip', 'install', package])
 
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -29,7 +49,19 @@ class Application(tk.Frame):
             self.photo = ImageTk.PhotoImage(self.image)
             self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
         else:
-            # Aquí puedes implementar la lógica para abrir y reproducir el video
+            self.video = imageio.get_reader(self.file_path)
+            self.delay = int(1000 / self.video.get_meta_data()['fps'])
+            self.play_video()
+
+    def play_video(self):
+        try:
+            frame = self.video.get_next_data()
+            frame_image = Image.fromarray(frame)
+            frame_image = frame_image.resize((720, 480), Image.ANTIALIAS)
+            self.photo = ImageTk.PhotoImage(frame_image)
+            self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
+            self.after(self.delay, self.play_video)
+        except:
             pass
 
 root = tk.Tk()
