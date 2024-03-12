@@ -25,6 +25,8 @@ class ReproductorVideo(ttk.Frame):
         self.__total_frames = 0
         self.__tiempo = StringVar()
         self.__tiempo.set("00:00:00")
+        self.__velocidad_reproduccion = DoubleVar()
+        self.__velocidad_reproduccion.set(1.0)
 
         # construir widgets
         self.widgets(parent)
@@ -64,6 +66,10 @@ class ReproductorVideo(ttk.Frame):
 
         self.boton_detener = Button(self.panel_botones, text="Detener", command=self.detener_video)
         self.boton_detener.pack(side=LEFT)
+
+        # selector de velocidad de reproducción
+        self.selector_velocidad = ttk.Combobox(self.panel_botones, textvariable=self.__velocidad_reproduccion, values=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0])
+        self.selector_velocidad.pack(side=LEFT)
 
         # contador de tiempo
         self.contador_tiempo = Label(self.panel_botones, textvariable=self.__tiempo)
@@ -155,10 +161,11 @@ class ReproductorVideo(ttk.Frame):
                     self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 self.progreso['value'] = 0
                 self.__tiempo.set("00:00:00")
-            self.after(15, self.reproducir_video)  # Llama a reproducir_video después de 15 milisegundos
+            self.after(int(15 / self.__velocidad_reproduccion.get()), self.reproducir_video)  # Llama a reproducir_video después de 15 milisegundos ajustados por la velocidad de reproducción
 
 if __name__ == "__main__":
     root = Tk()
     ReproductorVideo(root)
     root.mainloop()
+
 
